@@ -17,7 +17,7 @@ export const AssignmentInfo = ({  }: AssignmentInfoProps) => {
     if (!student || !assignment || !course) return null
 
     const hoursUntilDue = useMemo(() => (
-        assignment.isCreated ? (
+        assignment.isPublished ? (
             (assignment.adjustedDueDate!.getTime() - Date.now()) / MS_IN_HOURS
         ) : Infinity
     ), [assignment])
@@ -29,7 +29,7 @@ export const AssignmentInfo = ({  }: AssignmentInfoProps) => {
         let text = undefined
         let tooltip = undefined
         let filled = false
-        if (!assignment.isCreated || !assignment.isAvailable) {
+        if (!assignment.isPublished || !assignment.isAvailable) {
             // Upcoming assignment (missing either an open/close date OR open date not reached yet)
             color = "white"
             backgroundColor = "#1890ff"
@@ -104,7 +104,7 @@ export const AssignmentInfo = ({  }: AssignmentInfoProps) => {
             <div>
                 <header className={ assignmentNameClass }>{ assignment.name }</header>
                 { assignmentStatusTag }
-                { assignment.isCreated && !assignment.isClosed && hoursUntilDue <= 4 && (
+                { assignment.isPublished && !assignment.isClosed && hoursUntilDue <= 4 && (
                     <span
                         className={ tagClass }
                         style={{
@@ -134,7 +134,7 @@ export const AssignmentInfo = ({  }: AssignmentInfoProps) => {
             <div className={ assignmentInfoSectionClass }>
                 <h5 className={ assignmentInfoSectionHeaderClass }>Due date</h5>
                 <div>
-                    { assignment.isCreated ? (
+                    { assignment.isPublished ? (
                         new DateFormat(assignment.adjustedDueDate!).toBasicDatetime()
                     ) : (
                         `To be determined`
@@ -154,7 +154,7 @@ export const AssignmentInfo = ({  }: AssignmentInfoProps) => {
                     </div>
                 </div>
             ) }
-            { assignment.isCreated && assignment.isClosed && (
+            { assignment.isPublished && assignment.isClosed && (
                 <div className={ assignmentInfoSectionClass }>
                     <h5
                         className={ `${ assignmentInfoSectionHeaderClass} ${ assignmentInfoSectionWarningClass }` }
