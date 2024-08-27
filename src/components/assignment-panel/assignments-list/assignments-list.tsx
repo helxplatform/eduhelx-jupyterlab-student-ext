@@ -127,9 +127,14 @@ const AssignmentsBucket = ({
 }: AssignmentsBucketProps) => {
     const [expanded, setExpanded] = useState<boolean>(defaultExpanded)
 
-    const assignmentsSource = useMemo(() => (
-        assignments?.sort((a, b) => (a.adjustedDueDate?.getTime() ?? 0) - (b.adjustedDueDate?.getTime() ?? 0))
-    ), [assignments])
+    const assignmentsSource = useMemo(() => assignments?.sort((a, b) => {
+        const aDue = a.adjustedDueDate?.getTime() ?? Infinity
+        const bDue = b.adjustedDueDate?.getTime() ?? Infinity
+        // Sort by date, or name if same date.
+        if (aDue > bDue) return 1
+        if (aDue < bDue) return -1
+        return a.name.localeCompare(b.name, undefined, { numeric: true })
+    }), [assignments])
 
     const isEmpty = useMemo(() => !assignmentsSource || assignmentsSource.length === 0, [assignmentsSource])
 

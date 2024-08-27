@@ -247,20 +247,22 @@ class SubmissionHandler(BaseHandler):
             }))
             return
 
-        current_assignment_path = student_repo.get_assignment_path(student_repo.current_assignment)
+        student_notebook_path = student_repo.current_assignment_path / student_repo.current_assignment["student_notebook_path"]
+        with open(student_notebook_path, "r") as f:
+            student_notebook_content = f.read()
         
         rollback_id = get_head_commit_id(path=student_repo.repo_root)
-        stage_files(".", path=current_assignment_path)
+        stage_files(".", path=student_repo.current_assignment_path)
         
         try:
             commit_id = commit(
                 submission_summary,
                 submission_description if submission_description else None,
-                path=current_assignment_path
+                path=student_repo.current_assignment_path
             )
         except Exception as e:
             # If the commit fails then unstage the assignment files.
-            git_reset(".", path=current_assignment_path)
+            git_reset(".", path=student_repo.current_assignment_path)
             self.set_status(500)
             self.finish(str(e))
             return
@@ -268,7 +270,8 @@ class SubmissionHandler(BaseHandler):
         try:
             await self.api.create_submission(
                 student_repo.current_assignment["id"],
-                commit_id
+                commit_id,
+                student_notebook_content
             )
         except Exception as e:
             # If the submission fails create in the API, rollback the local commit to the previous head.
@@ -281,7 +284,7 @@ class SubmissionHandler(BaseHandler):
         # so that we don't push the stages changes without actually creating a submission for the user
         # (which would be very misleading)
         try:
-            push(StudentClassRepo.ORIGIN_REMOTE_NAME, StudentClassRepo.MAIN_BRANCH_NAME, path=current_assignment_path)
+            push(StudentClassRepo.ORIGIN_REMOTE_NAME, StudentClassRepo.MAIN_BRANCH_NAME, path=student_repo.current_assignment_path)
             self.finish()
         except Exception as e:
             # Need to rollback the commit if push failed too.

@@ -6,6 +6,9 @@ from eduhelx_utils import git
 class NotStudentClassRepositoryException(Exception):
     pass
 
+class NotInAnAssignmentException(Exception):
+    pass
+
 
 """ Note: this class is naive to the fixed repo path. It is designed for
 relative interaction with class repository filepaths WHILE inside the repository. """
@@ -28,9 +31,14 @@ class StudentClassRepo:
         
         self.repo_root = self._compute_repo_root(self.course["name"], self.current_path)
         self.current_assignment = self._compute_current_assignment(self.assignments, self.repo_root, self.current_path)
+
+    @property
+    def current_assignment_path(self) -> Path | None:
+        if self.current_assignment is None: return None
+        return self.get_assignment_path(self.current_assignment)
     
     def get_assignment_path(self, assignment):
-        return os.path.join(self.repo_root, assignment["directory_path"])
+        return self.repo_root / assignment["directory_path"]
 
     def get_protected_file_paths(self, assignment) -> list[Path]:
         files = []
@@ -38,8 +46,6 @@ class StudentClassRepo:
             files += self.get_assignment_path(assignment).glob(glob_pattern)
         return files
     
-
-
     @classmethod
     def _compute_repo_root(cls, course_name, current_path: str | None = None):
         """ Validates that user is in the repository root if current_path is provided """
@@ -65,3 +71,19 @@ class StudentClassRepo:
                 break
 
         return current_assignment
+
+    @classmethod
+    def from_assignment_no_path(cls, course, assignments, assignment_id: int):
+        try:
+            assignment = [a for a in assignments if a["id"] == assignment_id][0]
+        except IndexError:
+            raise NotInAnAssignmentException
+        
+        repo_root = cls._compute_repo_root(course["name"]).resolve()
+        assignment_path = repo_root / assignment["directory_path"]
+
+        return cls(
+            course=course,
+            assignments=assignments,
+            current_path=assignment_path
+        )
